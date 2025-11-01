@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人脸特征分析 - AI识别系统</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/utilities.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 人脸特征分析页面蓝色主题 */
+        body {
+            padding-top: 100px;
+            background: linear-gradient(135deg, #f0f7ff 0%, #ffffff 100%);
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+        }
+
+        .preview-container {
+            margin-top: 20px;
+            text-align: center;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9ff;
+            border-radius: var(--border-radius-sm);
+            border: 2px dashed #e6f3ff;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 250px;
+            border-radius: 8px;
+            display: none;
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.2);
+            border: 2px solid #4361ee;
+        }
+
+        .file-name {
+            display: block;
+            margin-top: 10px;
+            color: #4361ee;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+        }
+
+        .upload-btn:hover {
+            background: linear-gradient(135deg, #4895ef, #4361ee);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        /* 结果网格蓝色主题 */
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .result-item {
+            background: linear-gradient(135deg, #f8f9ff, #e6f3ff);
+            padding: 20px;
+            border-radius: var(--border-radius-sm);
+            text-align: center;
+            border-left: 4px solid #4361ee;
+            transition: all 0.3s ease;
+        }
+
+        .result-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.2);
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: #4361ee;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .result-value {
+            font-weight: 700;
+            color: #3a0ca3;
+            font-size: 18px;
+        }
+
+        /* 上传区域蓝色主题 */
+        .upload-area {
+            border: 2px dashed #4361ee;
+            border-radius: var(--border-radius-sm);
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            background: #e6f3ff;
+            border-color: #3a0ca3;
+            transform: translateY(-2px);
+        }
+
+        .upload-area i {
+            font-size: 48px;
+            color: #4361ee;
+            margin-bottom: 15px;
+        }
+
+        .upload-area p {
+            color: #4361ee;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        /* 分析按钮蓝色主题 */
+        #analyze-btn {
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            border: none;
+            padding: 15px;
+            border-radius: var(--border-radius-sm);
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+        }
+
+        #analyze-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #4895ef, #4361ee);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+        }
+
+        #analyze-btn:disabled {
+            background: #a0a0a0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* 使用说明蓝色主题 */
+        .instructions {
+            background: linear-gradient(135deg, #f8f9ff, #e6f3ff);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            margin-top: 30px;
+            border-left: 4px solid #4361ee;
+        }
+
+        .instructions h3 {
+            color: #4361ee;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .instruction-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            color: #555;
+            padding: 8px 0;
+        }
+
+        .instruction-item i {
+            color: #4361ee;
+            margin-right: 12px;
+            margin-top: 2px;
+            font-size: 16px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding-top: 120px;
+            }
+
+            .result-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo-container">
+                <img src="../static/images/logo.jpg" alt="系统Logo" class="logo">
+                <h1 class="welcome-text">人脸特征分析系统</h1>
+            </div>
+
+            <div class="nav-menu">
+                <div class="dropdown">
+                    <button class="btn" onclick="navigate('home')">
+                        <i class="fas fa-home"></i>&nbsp;首页
+                    </button>
+                </div>
+
+                <div class="dropdown" id="faceRecognitionDropdown">
+                    <button class="btn dropdown-btn" onclick="toggleDropdown('faceRecognitionDropdown')">
+                        <i class="fas fa-user-circle"></i>&nbsp;人脸识别
+                    </button>
+                    <div class="dropdown-content">
+                        <button class="btn" onclick="navigate('feature')">
+                            <i class="fas fa-project-diagram"></i>&nbsp;人脸特征分析
+                        </button>
+                        <button class="btn" onclick="navigate('compare')">
+                            <i class="fas fa-compress-alt"></i>&nbsp;人脸对比
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dropdown" id="aiChatDropdown">
+                    <button class="btn dropdown-btn" onclick="toggleDropdown('aiChatDropdown')">
+                        <i class="fas fa-robot"></i>&nbsp;AI对话
+                    </button>
+                    <div class="dropdown-content">
+                        <button class="btn" onclick="navigate('chat')">
+                            <i class="fas fa-comments"></i>&nbsp;校园问答
+                        </button>
+                        <button class="btn" onclick="navigate('voice_chat')">
+                            <i class="fas fa-microphone-alt"></i>&nbsp;语音聊天
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dropdown" id="speechDropdown">
+                    <button class="btn dropdown-btn" onclick="toggleDropdown('speechDropdown')">
+                        <i class="fas fa-microphone-alt"></i>&nbsp;语音技术
+                    </button>
+                    <div class="dropdown-content">
+                        <button class="btn" onclick="navigate('speech_recognition')">
+                            <i class="fas fa-microphone"></i>&nbsp;语音识别
+                        </button>
+                        <button class="btn" onclick="navigate('speech_synthesis')">
+                            <i class="fas fa-volume-up"></i>&nbsp;语音合成
+                        </button>
+                        <button class="btn" onclick="navigate('speech_information')">
+                            <i class="fas fa-info-circle"></i>&nbsp;语音信息
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-container">
+        <div class="page-header">
+            <h1><i class="fas fa-project-diagram"></i> 人脸特征综合分析</h1>
+            <p>基于深度学习算法，检测图像中的人脸并进行一系列人脸相关的特征分析</p>
+        </div>
+
+        <div class="grid-2">
+            <!-- 左侧上传区域 -->
+            <div class="card">
+                <h2 class="card-title" style="color: #4361ee;"><i class="fas fa-upload"></i> 上传图片</h2>
+                
+                <div class="upload-area" id="uploadArea">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>点击选择图片文件或拖拽到此处</p>
+                    <button class="upload-btn" id="uploadButton">选择文件</button>
+                    <span class="file-name" id="fileName">未选择文件</span>
+                </div>
+
+                <input type="file" id="fileInput" class="file-input" accept=".jpg,.jpeg,.png,.bmp">
+
+                <div class="preview-container">
+                    <img id="previewImage" class="preview-image" alt="图片预览">
+                </div>
+
+                <button class="btn-primary w-100 mt-20" id="analyze-btn" onclick="analyzeFeature()" disabled>
+                    <i class="fas fa-brain"></i> 开始分析
+                </button>
+            </div>
+
+            <!-- 右侧结果区域 -->
+            <div class="card">
+                <h2 class="card-title" style="color: #4361ee;"><i class="fas fa-chart-bar"></i> 分析结果</h2>
+                
+                <div class="result-grid">
+                    <div class="result-item">
+                        <div class="result-label">年龄</div>
+                        <div class="result-value" id="age-value">--</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">颜值评分</div>
+                        <div class="result-value" id="beauty-value">--</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">性别</div>
+                        <div class="result-value" id="gender-value">--</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">表情</div>
+                        <div class="result-value" id="expression-value">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h3><i class="fas fa-lightbulb"></i> 使用说明</h3>
+            <div class="instruction-item">
+                <i class="fas fa-check-circle"></i>
+                <span>图片文件仅支持.jpg/.jpeg/.png/.bmp格式，图片大小不超过2M</span>
+            </div>
+            <div class="instruction-item">
+                <i class="fas fa-check-circle"></i>
+                <span>请提供清晰的人脸照片，人脸大小不小于30*30像素</span>
+            </div>
+            <div class="instruction-item">
+                <i class="fas fa-check-circle"></i>
+                <span>人脸俯仰角、左右偏航角、人脸反转角60°以内识别效果最好</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading" class="loading">
+        <i class="fas fa-spinner fa-spin"></i> 正在分析，请稍候...
+    </div>
+
+    <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+    <script>
+        // 文件上传功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('fileInput');
+            const uploadButton = document.getElementById('uploadButton');
+            const uploadArea = document.getElementById('uploadArea');
+            const previewImage = document.getElementById('previewImage');
+            const fileName = document.getElementById('fileName');
+            const analyzeBtn = document.getElementById('analyze-btn');
+
+            // 点击上传按钮触发文件选择
+            uploadButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                fileInput.click();
+            });
+
+            // 点击上传区域触发文件选择
+            uploadArea.addEventListener('click', function(e) {
+                if (e.target !== uploadButton) {
+                    fileInput.click();
+                }
+            });
+            
+            // 文件选择变化事件
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // 显示文件名
+                    fileName.textContent = file.name;
+                    fileName.style.color = '#4361ee';
+                    
+                    // 预览图片
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImage.src = e.target.result;
+                        previewImage.style.display = 'block';
+                        analyzeBtn.disabled = false;
+                        analyzeBtn.style.background = 'linear-gradient(135deg, #4361ee, #3a0ca3)';
+                    };
+                    reader.readAsDataURL(file);
+                    
+                    // 立即上传文件到服务器
+                    handleFileUpload(fileInput, previewImage, fileName, 'feature')
+                    .then(data => {
+                        if (!data.success) {
+                            alert('文件上传失败: ' + data.error);
+                            analyzeBtn.disabled = true;
+                            analyzeBtn.style.background = '#a0a0a0';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('上传错误:', error);
+                        analyzeBtn.disabled = true;
+                        analyzeBtn.style.background = '#a0a0a0';
+                    });
+                }
+            });
+
+            // 初始化拖拽上传
+            initDragUpload(uploadArea, fileInput, function(file) {
+                // 文件拖拽后的回调
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                    previewImage.style.display = 'block';
+                    analyzeBtn.disabled = false;
+                    analyzeBtn.style.background = 'linear-gradient(135deg, #4361ee, #3a0ca3)';
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+
+        // 人脸特征分析功能
+        function analyzeFeature() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            const analyzeBtn = document.getElementById('analyze-btn');
+            
+            if (!file) {
+                alert('请先选择图片文件');
+                return;
+            }
+
+            // 更新按钮状态
+            analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 分析中...';
+            analyzeBtn.disabled = true;
+            
+            showLoading();
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('type', 'feature');
+
+            fetch('/feature', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('网络响应不正常');
+                }
+                return response.json();
+            })
+            .then(data => {
+                hideLoading();
+                // 恢复按钮状态
+                analyzeBtn.innerHTML = '<i class="fas fa-brain"></i> 开始分析';
+                analyzeBtn.disabled = false;
+                
+                if (data.flag === 'true') {
+                    // 从 data.data 中获取结果
+                    document.getElementById('age-value').textContent = data.data['年龄'] || '--';
+                    document.getElementById('beauty-value').textContent = data.data['颜值'] || '--';
+                    document.getElementById('gender-value').textContent = data.data['性别'] || '--';
+                    document.getElementById('expression-value').textContent = data.data['表情'] || '--';
+                    
+                    // 为结果值添加动画效果
+                    const resultValues = document.querySelectorAll('.result-value');
+                    resultValues.forEach(value => {
+                        value.style.animation = 'fadeInUp 0.5s ease';
+                    });
+                } else {
+                    alert('分析失败: ' + (data.msg || '未知错误'));
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                // 恢复按钮状态
+                analyzeBtn.innerHTML = '<i class="fas fa-brain"></i> 开始分析';
+                analyzeBtn.disabled = false;
+                alert('分析失败: ' + error.message);
+            });
+        }
+
+        // 添加动画样式
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

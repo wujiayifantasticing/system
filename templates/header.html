@@ -1,0 +1,62 @@
+<!-- templates/components/header.html -->
+<div class="header">
+    <div class="header-content">
+        <div class="logo-container">
+            <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="系统Logo" class="logo">
+            <h1 class="welcome-text">{{ page_title }}</h1>
+        </div>
+
+        <div class="nav-menu">
+            <div class="dropdown">
+                <button class="btn" onclick="navigate('home')">
+                    <i class="fas fa-home"></i>&nbsp;首页
+                </button>
+            </div>
+
+            <div class="dropdown" id="faceRecognitionDropdown">
+                <button class="btn dropdown-btn" onclick="toggleDropdown('faceRecognitionDropdown')">
+                    <i class="fas fa-user-circle"></i>&nbsp;人脸识别
+                </button>
+                <div class="dropdown-content">
+                    <button class="btn" onclick="navigate('feature')">
+                        <i class="fas fa-project-diagram"></i>&nbsp;人脸特征分析
+                    </button>
+                    <button class="btn" onclick="navigate('compare')">
+                        <i class="fas fa-compress-alt"></i>&nbsp;人脸对比
+                    </button>
+                </div>
+            </div>
+
+            <div class="dropdown" id="aiChatDropdown">
+                <button class="btn dropdown-btn" onclick="toggleDropdown('aiChatDropdown')">
+                    <i class="fas fa-robot"></i>&nbsp;AI对话
+                </button>
+                <div class="dropdown-content">
+                    <button class="btn" onclick="navigate('chat')">
+                        <i class="fas fa-comments"></i>&nbsp;校园问答
+                    </button>
+                    <button class="btn" onclick="navigate('voice_chat')">
+                        <i class="fas fa-microphone-alt"></i>&nbsp;语音聊天
+                    </button>
+                </div>
+            </div>
+
+            <div class="dropdown" id="speechDropdown">
+                <button class="btn dropdown-btn" onclick="toggleDropdown('speechDropdown')">
+                    <i class="fas fa-microphone-alt"></i>&nbsp;语音技术
+                </button>
+                <div class="dropdown-content">
+                    <button class="btn" onclick="navigate('speech_recognition')">
+                        <i class="fas fa-microphone"></i>&nbsp;语音识别
+                    </button>
+                    <button class="btn" onclick="navigate('speech_synthesis')">
+                        <i class="fas fa-volume-up"></i>&nbsp;语音合成
+                    </button>
+                    <button class="btn" onclick="navigate('speech_information')">
+                        <i class="fas fa-info-circle"></i>&nbsp;语音信息
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

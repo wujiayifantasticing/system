@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能语音聊天 - AI识别系统</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/utilities.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 语音聊天蓝色主题 */
+        body {
+            background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: auto;
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 120px 20px 40px 20px;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .chat-container {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-chat {
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .header-chat h1 {
+            font-size: 2em;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .header-chat p {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 25px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .model-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .model-select {
+            padding: 10px 15px;
+            border: 2px solid #e6f3ff;
+            border-radius: var(--border-radius-sm);
+            background: #f8f9ff;
+            color: #333;
+            font-size: 14px;
+            min-width: 160px;
+            transition: var(--transition);
+        }
+
+        .model-select:focus {
+            outline: none;
+            border-color: #4361ee;
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+
+        .model-status {
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .btn-chat {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            min-width: 140px;
+            justify-content: center;
+        }
+
+        .btn-record {
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            color: white;
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+            box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+        }
+
+        .btn-chat:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(67, 97, 238, 0.4);
+        }
+
+        .btn-chat:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            text-align: center;
+            margin-bottom: 25px;
+            padding: 15px;
+            border-radius: 10px;
+            background: #f8f9ff;
+            font-size: 1em;
+            color: #4361ee;
+            border-left: 4px solid #4361ee;
+            font-weight: 600;
+        }
+
+        .results {
+            background: #f8f9ff;
+            border-radius: var(--border-radius-sm);
+            padding: 20px;
+            margin-bottom: 15px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border: 2px solid #e6f3ff;
+        }
+
+        .result-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: var(--border-radius-sm);
+            border-left: 4px solid #4361ee;
+        }
+
+        .result-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: #4361ee;
+            margin-bottom: 10px;
+            display: block;
+            font-size: 1em;
+        }
+
+        .result-content {
+            color: #333;
+            line-height: 1.6;
+            min-height: 20px;
+        }
+
+        .audio-player {
+            width: 100%;
+            margin-top: 10px;
+            border-radius: 6px;
+            background: white;
+        }
+
+        .audio-status {
+            padding: 8px;
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            background: #e6f3ff;
+            border-radius: var(--border-radius-sm);
+        }
+
+        .audio-status a {
+            color: #4361ee;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .audio-status a:hover {
+            text-decoration: underline;
+        }
+
+        .tip-text {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        /* 录音动画效果 */
+        .recording-animation {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 4px;
+            margin: 10px 0;
+        }
+
+        .recording-dot {
+            width: 8px;
+            height: 8px;
+            background: #4361ee;
+            border-radius: 50%;
+            animation: recordingPulse 1.5s ease-in-out infinite;
+        }
+
+        .recording-dot:nth-child(2) { animation-delay: 0.2s; }
+        .recording-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes recordingPulse {
+            0%, 100% { transform: scale(1); opacity: 0.7; }
+            50% { transform: scale(1.2); opacity: 1; }
+        }
+
+        /* 音频波形可视化 */
+        .wave-visualization {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            height: 40px;
+            margin: 10px 0;
+        }
+
+        .wave-bar {
+            width: 3px;
+            height: 20px;
+            background: #4361ee;
+            border-radius: 2px;
+            animation: wave 1.5s ease-in-out infinite;
+        }
+
+        .wave-bar:nth-child(2) { animation-delay: 0.1s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.2s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.3s; }
+        .wave-bar:nth-child(5) { animation-delay: 0.4s; }
+        .wave-bar:nth-child(6) { animation-delay: 0.5s; }
+
+        @keyframes wave {
+            0%, 100% { transform: scaleY(0.5); }
+            50% { transform: scaleY(1.5); }
+        }
+
+        /* 对话历史 */
+        .conversation-history {
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            border-radius: var(--border-radius-sm);
+            padding: 15px;
+            margin-top: 15px;
+            border: 1px solid #e6f3ff;
+        }
+
+        .history-item {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: var(--border-radius-sm);
+            font-size: 0.9em;
+        }
+
+        .history-user {
+            background: #e6f3ff;
+            color: #4361ee;
+            margin-left: auto;
+            text-align: right;
+            max-width: 80%;
+        }
+
+        .history-bot {
+            background: #f8f9ff;
+            color: #333;
+            margin-right: auto;
+            max-width: 80%;
+        }
+
+        /* 模型信息提示 */
+        .model-info {
+            background: #e6f3ff;
+            padding: 10px 15px;
+            border-radius: var(--border-radius-sm);
+            margin-top: 10px;
+            border-left: 3px solid #4361ee;
+        }
+
+        .model-info h4 {
+            margin: 0 0 5px 0;
+            color: #4361ee;
+            font-size: 14px;
+        }
+
+        .model-info p {
+            margin: 0;
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 110px 15px 30px 15px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+                gap: 15px;
+            }
+            
+            .model-controls {
+                order: -1;
+                width: 100%;
+                justify-content: center;
+                margin-bottom: 10px;
+            }
+            
+            .model-select {
+                width: 100%;
+                max-width: 280px;
+            }
+            
+            .btn-chat {
+                width: 100%;
+                max-width: 280px;
+            }
+            
+            .header-chat h1 {
+                font-size: 1.6em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+
+            .result-item {
+                padding: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-chat {
+                padding: 20px 15px;
+            }
+            
+            .header-chat h1 {
+                font-size: 1.4em;
+            }
+            
+            .content {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo-container">
+                <img src="../static/images/logo.jpg" alt="系统Logo" class="logo">
+                <h1 class="welcome-text">智能语音聊天</h1>
+            </div>
+
+            <div class="nav-menu">
+                <div class="dropdown">
+                    <button class="btn" onclick="navigate('home')">
+                        <i class="fas fa-home"></i>&nbsp;首页
+                    </button>
+                </div>
+
+                <div class="dropdown" id="faceRecognitionDropdown">
+                    <button class="btn dropdown-btn" onclick="toggleDropdown('faceRecognitionDropdown')">
+                        <i class="fas fa-user-circle"></i>&nbsp;人脸识别
+                    </button>
+                    <div class="dropdown-content">
+                        <button class="btn" onclick="navigate('feature')">
+                            <i class="fas fa-project-diagram"></i>&nbsp;人脸特征分析
+                        </button>
+                        <button class="btn" onclick="navigate('compare')">
+                            <i class="fas fa-compress-alt"></i>&nbsp;人脸对比
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dropdown" id="aiChatDropdown">
+                    <button class="btn dropdown-btn" onclick="toggleDropdown('aiChatDropdown')">
+                        <i class="fas fa-robot"></i>&nbsp;AI对话
+                    </button>
+                    <div class="dropdown-content">
+                        <button class="btn" onclick="navigate('chat')">
+                            <i class="fas fa-comments"></i>&nbsp;校园问答
+                        </button>
+                        <button class="btn" onclick="navigate('voice_chat')">
+                            <i class="fas fa-microphone-alt"></i>&nbsp;语音聊天
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dropdown" id="speechDropdown">
+                    <button class="btn dropdown-btn" onclick="toggleDropdown('speechDropdown')">
+                        <i class="fas fa-microphone-alt"></i>&nbsp;语音技术
+                    </button>
+                    <div class="dropdown-content">
+                        <button class="btn" onclick="navigate('speech_recognition')">
+                            <i class="fas fa-microphone"></i>&nbsp;语音识别
+                        </button>
+                        <button class="btn" onclick="navigate('speech_synthesis')">
+                            <i class="fas fa-volume-up"></i>&nbsp;语音合成
+                        </button>
+                        <button class="btn" onclick="navigate('speech_information')">
+                            <i class="fas fa-info-circle"></i>&nbsp;语音信息
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="chat-container">
+            <div class="header-chat">
+                <h1>🎤 智能语音聊天</h1>
+                <p>与AI进行自然的语音对话，体验智能语音交互的魅力</p>
+            </div>
+            
+            <div class="content">
+                <div class="controls">
+                    <div class="model-controls">
+                        <select id="voice-model-select" class="model-select">
+                            <option value="lite">星火Lite模型（快速响应）</option>
+                            <option value="x1">星火X1模型（深度思考）</option>
+                        </select>
+                        <span class="model-status" id="modelStatus">当前：Lite模型</span>
+                    </div>
+                    <button id="startBtn" class="btn-chat btn-record">
+                        <i class="fas fa-microphone"></i> 开始录音
+                    </button>
+                    <button id="stopBtn" class="btn-chat btn-stop" disabled>
+                        <i class="fas fa-stop"></i> 停止录音
+                    </button>
+                </div>
+
+                <!-- 模型信息提示 -->
+                <div class="model-info">
+                    <h4><i class="fas fa-lightbulb"></i> 模型选择说明：</h4>
+                    <p><strong>星火Lite模型</strong>：响应速度快，适合日常对话和简单问题</p>
+                    <p><strong>星火X1模型</strong>：思考更深入，适合复杂问题和深度分析</p>
+                </div>
+                
+                <div class="status" id="status">
+                    <i class="fas fa-info-circle"></i> 点击"开始录音"按钮开始语音对话
+                </div>
+                
+                <div class="results">
+                    <div class="result-item">
+                        <span class="result-label">您说的话：</span>
+                        <div class="result-content" id="recognizedText">
+                            - - -
+                        </div>
+                    </div>
+                    
+                    <div class="result-item">
+                        <span class="result-label">AI回复：</span>
+                        <div class="result-content" id="aiReply">
+                            - - -
+                        </div>
+                    </div>
+                    
+                    <div class="result-item">
+                        <span class="result-label">语音回复：</span>
+                        <div class="result-content">
+                            <!-- 音频波形可视化 -->
+                            <div class="wave-visualization">
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                            </div>
+                            
+                            <audio id="audioPlayer" controls class="audio-player" style="display: none;">
+                                您的浏览器不支持音频播放
+                            </audio>
+                            <div id="audioStatus" class="audio-status">暂无音频，完成对话后即可播放语音回复</div>
+                        </div>
+                    </div>
+
+                    <!-- 对话历史 -->
+                    <div class="conversation-history" id="conversationHistory" style="display: none;">
+                        <div class="history-item history-user">
+                            你好！
+                        </div>
+                        <div class="history-item history-bot">
+                            您好！我是AI助手，很高兴为您服务。
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tip-text">
+                    <i class="fas fa-lightbulb"></i> 提示：按空格键开始录音，ESC键停止录音
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+    <script>
+        // 语音聊天功能
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+        let conversationHistory = [];
+        let currentModel = 'lite'; // 默认模型
+
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusDiv = document.getElementById('status');
+        const recognizedTextDiv = document.getElementById('recognizedText');
+        const aiReplyDiv = document.getElementById('aiReply');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const audioStatus = document.getElementById('audioStatus');
+        const conversationHistoryDiv = document.getElementById('conversationHistory');
+        const modelSelect = document.getElementById('voice-model-select');
+        const modelStatus = document.getElementById('modelStatus');
+
+        // 模型选择事件
+        modelSelect.addEventListener('change', function(e) {
+            currentModel = e.target.value;
+            const modelName = e.target.selectedOptions[0].text.split('（')[0];
+            modelStatus.textContent = `当前：${modelName}`;
+            statusDiv.innerHTML = `<i class="fas fa-info-circle"></i> 已切换到${modelName}，点击"开始录音"开始对话`;
+        });
+
+        // 检查浏览器支持
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> 您的浏览器不支持录音功能，请使用Chrome、Firefox或Edge等现代浏览器';
+            startBtn.disabled = true;
+        }
+
+        startBtn.addEventListener('click', startRecording);
+        stopBtn.addEventListener('click', stopRecording);
+
+        async function startRecording() {
+            try {
+                statusDiv.innerHTML = '<div class="recording-animation"><div class="recording-dot"></div><div class="recording-dot"></div><div class="recording-dot"></div></div> 请求麦克风权限...';
+                
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        sampleRate: 16000,
+                        channelCount: 1,
+                        echoCancellation: true,
+                        noiseSuppression: true
+                    } 
+                });
+                
+                mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: 'audio/webm;codecs=opus'
+                });
+                
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+                
+                mediaRecorder.onstop = processAudio;
+                
+                mediaRecorder.start();
+                isRecording = true;
+                
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                modelSelect.disabled = true;
+                statusDiv.innerHTML = '<div class="recording-animation"><div class="recording-dot"></div><div class="recording-dot"></div><div class="recording-dot"></div></div> <strong>录音中...</strong> 请开始说话';
+                
+            } catch (error) {
+                console.error('录音启动失败:', error);
+                statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> 无法访问麦克风: ' + error.message;
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                
+                // 停止所有音轨
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                modelSelect.disabled = false;
+                statusDiv.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> 处理音频中...';
+            }
+        }
+
+        async function processAudio() {
+            try {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                
+                // 转换为WAV格式
+                const wavBlob = await convertToWav(audioBlob);
+                
+                // 上传到服务器
+                await uploadAudio(wavBlob);
+                
+            } catch (error) {
+                console.error('音频处理失败:', error);
+                statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> 音频处理失败: ' + error.message;
+            }
+        }
+
+        async function convertToWav(audioBlob) {
+            return new Promise((resolve, reject) => {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const fileReader = new FileReader();
+                
+                fileReader.onload = function() {
+                    audioContext.decodeAudioData(fileReader.result, (audioBuffer) => {
+                        // 转换为WAV格式
+                        const wavBuffer = encodeWAV(audioBuffer);
+                        const wavBlob = new Blob([wavBuffer], { type: 'audio/wav' });
+                        resolve(wavBlob);
+                    }, reject);
+                };
+                fileReader.onerror = reject;
+                fileReader.readAsArrayBuffer(audioBlob);
+            });
+        }
+
+        // WAV编码函数
+        function encodeWAV(audioBuffer) {
+            const numChannels = 1;
+            const sampleRate = 16000;
+            const format = 1; // PCM
+            const bitDepth = 16;
+            
+            const bytesPerSample = bitDepth / 8;
+            const blockAlign = numChannels * bytesPerSample;
+            
+            const buffer = new ArrayBuffer(44 + audioBuffer.length * blockAlign);
+            const view = new DataView(buffer);
+            
+            // WAV文件头
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + audioBuffer.length * blockAlign, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, format, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * blockAlign, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bitDepth, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, audioBuffer.length * blockAlign, true);
+            
+            // 音频数据
+            floatTo16BitPCM(view, 44, audioBuffer.getChannelData(0));
+            
+            return buffer;
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        function floatTo16BitPCM(view, offset, input) {
+            for (let i = 0; i < input.length; i++, offset += 2) {
+                const s = Math.max(-1, Math.min(1, input[i]));
+                view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+            }
+        }
+
+        async function uploadAudio(audioBlob) {
+            try {
+                const formData = new FormData();
+                formData.append('audio', audioBlob, `voice_chat_${Date.now()}.wav`);
+                formData.append('model_type', currentModel); // 传递模型类型
+                
+                console.log(`开始上传音频，使用模型: ${currentModel}`);
+                const response = await fetch('/api/voice_chat', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('服务器响应:', data);
+                
+                if (data.success) {
+                    // 显示识别结果
+                    recognizedTextDiv.textContent = data.recognized_text || '（无法识别）';
+                    aiReplyDiv.textContent = data.ai_reply;
+                    
+                    // 添加到对话历史
+                    addToHistory(data.recognized_text || '（语音消息）', data.ai_reply);
+                    
+                    // 播放音频回复
+                    if (data.audio_url) {
+                        const newAudio = new Audio();
+                        newAudio.src = data.audio_url + '?t=' + Date.now();
+                        newAudio.controls = true;
+                        newAudio.className = 'audio-player';
+                        
+                        // 替换旧的音频元素
+                        const oldAudio = document.getElementById('audioPlayer');
+                        oldAudio.parentNode.replaceChild(newAudio, oldAudio);
+                        newAudio.id = 'audioPlayer';
+                        
+                        // 显示音频播放器
+                        newAudio.style.display = 'block';
+                        audioStatus.style.display = 'none';
+                        
+                        // 尝试播放
+                        newAudio.play().then(() => {
+                            console.log('音频播放成功');
+                        }).catch(e => {
+                            console.log('自动播放被阻止，等待用户点击:', e);
+                            audioStatus.innerHTML = '<i class="fas fa-volume-up"></i> <a href="#" onclick="document.getElementById(\'audioPlayer\').play(); return false;">点击播放语音回复</a>';
+                            audioStatus.style.display = 'block';
+                        });
+                    }
+                    
+                    statusDiv.innerHTML = '<i class="fas fa-check-circle" style="color: #28a745;"></i> 对话完成！';
+                    
+                } else {
+                    statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + (data.error || '处理失败');
+                }
+                
+            } catch (error) {
+                console.error('上传失败:', error);
+                statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> 网络错误: ' + error.message;
+            }
+        }
+
+        // 添加到对话历史
+        function addToHistory(userMessage, botMessage) {
+            conversationHistory.push({
+                user: userMessage,
+                bot: botMessage,
+                timestamp: new Date(),
+                model: currentModel
+            });
+            
+            // 更新历史显示
+            updateHistoryDisplay();
+        }
+
+        // 更新历史显示
+        function updateHistoryDisplay() {
+            const historyContainer = document.getElementById('conversationHistory');
+            historyContainer.innerHTML = '';
+            
+            conversationHistory.forEach(item => {
+                // 用户消息
+                const userDiv = document.createElement('div');
+                userDiv.className = 'history-item history-user';
+                userDiv.textContent = item.user;
+                historyContainer.appendChild(userDiv);
+                
+                // AI回复
+                const botDiv = document.createElement('div');
+                botDiv.className = 'history-item history-bot';
+                
+                // 添加模型标识
+                const modelBadge = document.createElement('span');
+                modelBadge.style.cssText = 'font-size: 10px; color: #666; background: #e6f3ff; padding: 2px 6px; border-radius: 10px; margin-left: 8px;';
+                modelBadge.textContent = item.model === 'x1' ? 'X1' : 'Lite';
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.textContent = item.bot;
+                
+                botDiv.appendChild(contentDiv);
+                botDiv.appendChild(modelBadge);
+                historyContainer.appendChild(botDiv);
+            });
+            
+            // 显示历史区域
+            historyContainer.style.display = 'block';
+            historyContainer.scrollTop = historyContainer.scrollHeight;
+        }
+
+        // 键盘快捷键
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !isRecording && !startBtn.disabled) {
+                e.preventDefault();
+                startRecording();
+            } else if (e.code === 'Escape' && isRecording) {
+                e.preventDefault();
+                stopRecording();
+            }
+        });
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('语音聊天页面已加载');
+            // 设置默认模型状态
+            modelStatus.textContent = '当前：Lite模型';
+        });
+    </script>
+</body>
+</html>

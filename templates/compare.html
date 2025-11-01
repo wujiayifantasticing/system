@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人脸比对 - AI识别系统</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/utilities.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 人脸比对页面蓝色主题 */
+        .compare-grid {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .upload-card {
+            text-align: center;
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--card-shadow);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .upload-card:hover {
+            border-color: #4361ee;
+            box-shadow: 0 8px 25px rgba(67, 97, 238, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .upload-card h3 {
+            color: #4361ee;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 250px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.2);
+            border: 2px solid #e6f3ff;
+            transition: all 0.3s ease;
+        }
+
+        .preview-image:hover {
+            border-color: #4361ee;
+            box-shadow: 0 6px 20px rgba(67, 97, 238, 0.3);
+        }
+
+        .compare-center {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+
+        /* 比对按钮蓝色主题 */
+        #compare-btn {
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            border: none;
+            padding: 15px 30px;
+            border-radius: var(--border-radius-sm);
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+            min-width: 150px;
+        }
+
+        #compare-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #4895ef, #4361ee);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+        }
+
+        #compare-btn:disabled {
+            background: #a0a0a0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* 结果卡片蓝色主题 */
+        .compare-center .card {
+            background: linear-gradient(135deg, #f8f9ff, #e6f3ff);
+            border: 2px solid #4361ee;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            text-align: center;
+            min-width: 200px;
+        }
+
+        .compare-center .card h3 {
+            color: #4361ee;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        /* 结果网格蓝色主题 */
+        .result-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background: white;
+            border-radius: var(--border-radius-sm);
+            border-left: 4px solid #4361ee;
+            transition: all 0.3s ease;
+        }
+
+        .result-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.2);
+        }
+
+        .result-item span:first-child {
+            color: #4361ee;
+            font-weight: 600;
+        }
+
+        .result-value {
+            color: #3a0ca3;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        /* 上传区域蓝色主题 */
+        .upload-area {
+            border: 2px dashed #4361ee;
+            border-radius: var(--border-radius-sm);
+            padding: 30px 20px;
+            text-align: center;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            background: #e6f3ff;
+            border-color: #3a0ca3;
+            transform: translateY(-2px);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        /* 状态提示蓝色主题 */
+        .text-muted {
+            color: #4361ee !important;
+            font-size: 14px;
+        }
+
+        .text-success {
+            color: #4361ee !important;
+            font-weight: 600;
+        }
+
+        .text-warning {
+            color: #ff6b6b !important;
+        }
+
+        /* 使用说明蓝色主题 */
+        .instructions {
+            background: linear-gradient(135deg, #f8f9ff, #e6f3ff);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            margin-top: 30px;
+            border-left: 4px solid #4361ee;
+        }
+
+        .instructions h3 {
+            color: #4361ee;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .instruction-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            color: #555;
+            padding: 8px 0;
+        }
+
+        .instruction-item i {
+            color: #4361ee;
+            margin-right: 12px;
+            margin-top: 2px;
+            font-size: 16px;
+        }
+
+        /* 加载动画蓝色主题 */
+        .loading {
+            background: rgba(67, 97, 238, 0.9);
+            color: white;
+        }
+
+        @media (max-width: 968px) {
+            .compare-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+            }
+            
+            .compare-center {
+                grid-column: 1;
+                grid-row: 2;
+                flex-direction: row;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .compare-center .card {
+                min-width: 150px;
+                margin: 0 10px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .compare-center {
+                flex-direction: column;
+            }
+            
+            .compare-center .card {
+                width: 100%;
+                max-width: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo-container">
+                <img src="../static/images/logo.jpg" alt="系统Logo" class="logo">
+                <h1 class="welcome-text">人脸比对系统</h1>
+            </div>
+
+            <div class="nav-menu">
+                <!-- 统一的导航菜单 -->
+                <div class="dropdown">
+                    <button class="btn" onclick="navigate('home')">
+                        <i class="fas fa-home"></i>&nbsp;首页
+                    </button>
+                </div>
+
+                <div class="dropdown" id="faceRecognitionDropdown">
+                    <button class="btn dropdown-btn" onclick="toggleDropdown('faceRecognitionDropdown')">
+                        <i class="fas fa-user-circle"></i>&nbsp;人脸识别
+                    </button>
+                    <div class="dropdown-content">
+                        <button class="btn" onclick="navigate('feature')">
+                            <i class="fas fa-project-diagram"></i>&nbsp;人脸特征分析
+                        </button>
+                        <button class="btn" onclick="navigate('compare')">
+                            <i class="fas fa-compress-alt"></i>&nbsp;人脸对比
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dropdown" id="aiChatDropdown">
+                    <button class="btn dropdown-btn" onclick="toggleDropdown('aiChatDropdown')">
+                        <i class="fas fa-robot"></i>&nbsp;AI对话
+                    </button>
+                    <div class="dropdown-content">
+                        <button class="btn" onclick="navigate('chat')">
+                            <i class="fas fa-comments"></i>&nbsp;校园问答
+                        </button>
+                        <button class="btn" onclick="navigate('voice_chat')">
+                            <i class="fas fa-microphone-alt"></i>&nbsp;语音聊天
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dropdown" id="speechDropdown">
+                    <button class="btn dropdown-btn" onclick="toggleDropdown('speechDropdown')">
+                        <i class="fas fa-microphone-alt"></i>&nbsp;语音技术
+                    </button>
+                    <div class="dropdown-content">
+                        <button class="btn" onclick="navigate('speech_recognition')">
+                            <i class="fas fa-microphone"></i>&nbsp;语音识别
+                        </button>
+                        <button class="btn" onclick="navigate('speech_synthesis')">
+                            <i class="fas fa-volume-up"></i>&nbsp;语音合成
+                        </button>
+                        <button class="btn" onclick="navigate('speech_information')">
+                            <i class="fas fa-info-circle"></i>&nbsp;语音信息
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-container">
+        <div class="page-header">
+            <h1><i class="fas fa-people-arrows"></i> 人脸比对综合分析</h1>
+            <p>基于讯飞自研的人脸算法，对比两张照片中的人脸信息，判断是否是同一个人并返回相似度得分</p>
+        </div>
+
+        <div class="compare-grid">
+            <!-- 左侧图片上传 -->
+            <div class="card upload-card">
+                <h3><i class="fas fa-image"></i> 第一张图片</h3>
+                <div class="upload-area" onclick="document.getElementById('file1').click()">
+                    <img src="../static/images/default_face_compare.jpg" id="img1" class="preview-image" alt="图片预览">
+                </div>
+                <input type="file" id="file1" class="file-input" accept=".jpg,.png,.bmp" onchange="previewImage(this, 'img1', 'file1-status', 'compare1')">
+                <div id="file1-status" class="text-muted mt-10">
+                    <i class="fas fa-info-circle"></i> 等待上传图片...
+                </div>
+            </div>
+
+            <!-- 中间比对区域 -->
+            <div class="compare-center">
+                <button class="btn-primary" id="compare-btn" onclick="compareFaces()" disabled>
+                    <i class="fas fa-people-arrows"></i> 开始比对
+                </button>
+                <div class="card">
+                    <h3><i class="fas fa-chart-bar"></i> 比对结果</h3>
+                    <div class="result-grid">
+                        <div class="result-item">
+                            <span>相似度</span>
+                            <span class="result-value" id="similarity">--</span>
+                        </div>
+                        <div class="result-item">
+                            <span>比对结果</span>
+                            <span class="result-value" id="compare-result">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧图片上传 -->
+            <div class="card upload-card">
+                <h3><i class="fas fa-image"></i> 第二张图片</h3>
+                <div class="upload-area" onclick="document.getElementById('file2').click()">
+                    <img src="../static/images/default_face_compare.jpg" id="img2" class="preview-image" alt="图片预览">
+                </div>
+                <input type="file" id="file2" class="file-input" accept=".jpg,.png,.bmp" onchange="previewImage(this, 'img2', 'file2-status', 'compare2')">
+                <div id="file2-status" class="text-muted mt-10">
+                    <i class="fas fa-info-circle"></i> 等待上传图片...
+                </div>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h3><i class="fas fa-lightbulb"></i> 使用说明</h3>
+            <div class="instruction-item">
+                <i class="fas fa-check-circle"></i>
+                <span>图片文件仅支持.jpg/.jpeg/.png/.bmp格式，图片大小不超过2M</span>
+            </div>
+            <div class="instruction-item">
+                <i class="fas fa-check-circle"></i>
+                <span>请提供清晰的人脸照片，人脸大小不小于30*30像素</span>
+            </div>
+            <div class="instruction-item">
+                <i class="fas fa-check-circle"></i>
+                <span>人脸俯仰角、左右偏航角、人脸反转角60°以内识别效果最好</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading" class="loading">
+        <i class="fas fa-spinner fa-spin"></i> 正在分析，请稍候...
+    </div>
+
+    <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+    <script>
+        // 添加全局变量跟踪上传状态
+        let file1Uploaded = false;
+        let file2Uploaded = false;
+
+        // 修改预览函数，添加文件上传
+        function previewImage(input, imgId, statusId, fileType) {
+            const file = input.files[0];
+            const imgElement = document.getElementById(imgId);
+            const statusElement = document.getElementById(statusId);
+            const compareBtn = document.getElementById('compare-btn');
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imgElement.src = e.target.result;
+                    statusElement.innerHTML = `<i class="fas fa-sync-alt fa-spin" style="color: #4361ee;"></i> 正在上传...`;
+                    
+                    // 上传文件到服务器
+                    handleFileUpload(input, imgElement, statusElement, fileType)
+                    .then(data => {
+                        statusElement.innerHTML = `<i class="fas fa-check-circle text-success"></i> 上传成功: ${file.name}`;
+                        
+                        // 更新上传状态
+                        if (fileType === 'compare1') {
+                            file1Uploaded = true;
+                        } else {
+                            file2Uploaded = true;
+                        }
+                        
+                        // 检查是否两个文件都已上传
+                        if (file1Uploaded && file2Uploaded) {
+                            compareBtn.disabled = false;
+                            compareBtn.style.background = 'linear-gradient(135deg, #4361ee, #3a0ca3)';
+                        }
+                    })
+                    .catch(error => {
+                        statusElement.innerHTML = `<i class="fas fa-times-circle text-warning"></i> 上传失败: ${error.message}`;
+                        input.value = ''; // 清空文件选择
+                        
+                        // 重置上传状态
+                        if (fileType === 'compare1') {
+                            file1Uploaded = false;
+                        } else {
+                            file2Uploaded = false;
+                        }
+                        updateCompareButtonState();
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // 更新比对按钮状态
+        function updateCompareButtonState() {
+            const compareBtn = document.getElementById('compare-btn');
+            if (file1Uploaded && file2Uploaded) {
+                compareBtn.disabled = false;
+                compareBtn.style.background = 'linear-gradient(135deg, #4361ee, #3a0ca3)';
+            } else {
+                compareBtn.disabled = true;
+                compareBtn.style.background = '#a0a0a0';
+            }
+        }
+
+        // 修改人脸比对函数
+        function compareFaces() {
+            if (!file1Uploaded || !file2Uploaded) {
+                alert('请先上传两张图片');
+                return;
+            }
+
+            const compareBtn = document.getElementById('compare-btn');
+            
+            // 更新按钮状态
+            compareBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 比对中...';
+            compareBtn.disabled = true;
+
+            showLoading();
+
+            // 直接调用比对接口，不需要上传文件
+            fetch('/compare', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                
+                // 恢复按钮状态
+                compareBtn.innerHTML = '<i class="fas fa-people-arrows"></i> 开始比对';
+                compareBtn.disabled = false;
+                
+                // 根据后端实际返回的数据结构更新
+                if (data.flag === 'true') {
+                    const resultData = data.data;
+                    const similarityElement = document.getElementById('similarity');
+                    const resultElement = document.getElementById('compare-result');
+                    
+                    similarityElement.textContent = (resultData.score * 100).toFixed(2) + '%';
+                    resultElement.textContent = resultData.desc;
+                    
+                    // 添加结果动画
+                    similarityElement.style.animation = 'fadeInUp 0.5s ease';
+                    resultElement.style.animation = 'fadeInUp 0.5s ease';
+                    
+                    // 根据相似度设置颜色
+                    const similarity = resultData.score;
+                    if (similarity > 0.67) {
+                        similarityElement.style.color = '#4361ee';
+                        resultElement.style.color = '#4361ee';
+                    } else {
+                        similarityElement.style.color = '#ff6b6b';
+                        resultElement.style.color = '#ff6b6b';
+                    }
+                } else {
+                    alert('比对失败: ' + (data.msg || '未知错误'));
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                
+                // 恢复按钮状态
+                compareBtn.innerHTML = '<i class="fas fa-people-arrows"></i> 开始比对';
+                compareBtn.disabled = false;
+                
+                alert('比对失败: ' + error.message);
+            });
+        }
+
+        // 添加动画样式
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>语音合成 - AI识别系统</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/utilities.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 语音合成页面蓝色主题 */
+        .text-input {
+            width: 100%;
+            min-height: 300px;
+            padding: 20px;
+            border: 2px solid #e6f3ff;
+            border-radius: var(--border-radius-sm);
+            font-size: 16px;
+            line-height: 1.6;
+            resize: vertical;
+            margin-bottom: 20px;
+            transition: var(--transition);
+            font-family: inherit;
+            background: #f8f9ff;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: #4361ee;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+
+        .text-input::placeholder {
+            color: #a0a0a0;
+        }
+
+        /* 音频容器蓝色主题 */
+        .audio-container {
+            width: 100%;
+            margin: 20px 0;
+            background: linear-gradient(135deg, #f8f9ff, #e6f3ff);
+            border-radius: var(--border-radius-sm);
+            padding: 20px;
+            border: 2px solid #e6f3ff;
+        }
+
+        .audio-player {
+            width: 100%;
+            height: 50px;
+            border-radius: 8px;
+            background: white;
+        }
+
+        /* 自定义音频播放器样式 */
+        .audio-player::-webkit-media-controls-panel {
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+        }
+
+        .audio-player::-webkit-media-controls-play-button {
+            background-color: white;
+            border-radius: 50%;
+        }
+
+        .audio-player::-webkit-media-controls-current-time-display,
+        .audio-player::-webkit-media-controls-time-remaining-display {
+            color: white;
+        }
+
+        .status-message {
+            margin: 15px 0;
+            font-size: 16px;
+            color: #4361ee;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        /* 合成按钮蓝色主题 */
+        .btn-primary {
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            border: none;
+            padding: 15px;
+            border-radius: var(--border-radius-sm);
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #4895ef, #4361ee);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+        }
+
+        .btn-primary:disabled {
+            background: #a0a0a0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* 文本统计信息 */
+        .text-stats {
+            background: #e6f3ff;
+            border-radius: var(--border-radius-sm);
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #4361ee;
+        }
+
+        .text-stats p {
+            margin: 5px 0;
+            color: #4361ee;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .text-stats span {
+            color: #3a0ca3;
+        }
+
+        /* 结果内容区域 */
+        .result-content {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        /* 加载动画 */
+        .loading {
+            background: rgba(67, 97, 238, 0.9);
+            color: white;
+        }
+
+        /* 成功状态指示 */
+        .success-indicator {
+            display: inline-flex;
+            align-items: center;
+            padding: 10px 20px;
+            border-radius: 25px;
+            background: #d4edda;
+            color: #155724;
+            font-weight: 600;
+            margin: 15px 0;
+        }
+
+        .success-indicator i {
+            margin-right: 8px;
+            color: #28a745;
+        }
+
+        /* 语音参数设置 */
+        .voice-settings {
+            background: linear-gradient(135deg, #f8f9ff, #e6f3ff);
+            border-radius: var(--border-radius-sm);
+            padding: 20px;
+            margin: 20px 0;
+            border: 2px solid #e6f3ff;
+        }
+
+        .voice-settings h4 {
+            color: #4361ee;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .setting-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .setting-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .setting-item label {
+            color: #4361ee;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .setting-item select,
+        .setting-item input {
+            padding: 10px;
+            border: 2px solid #e6f3ff;
+            border-radius: var(--border-radius-sm);
+            background: white;
+            transition: var(--transition);
+        }
+
+        .setting-item select:focus,
+        .setting-item input:focus {
+            outline: none;
+            border-color: #4361ee;
+            box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.1);
+        }
+
+        /* 下载按钮 */
+        .download-btn {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: var(--border-radius-sm);
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+            margin-top: 15px;
+        }
+
+        .download-btn:hover {
+            background: linear-gradient(135deg, #20c997, #28a745);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        /* 音频可视化 */
+        .audio-visualization {
+            width: 100%;
+            height: 80px;
+            background: linear-gradient(135deg, #f8f9ff, #e6f3ff);
+            border-radius: var(--border-radius-sm);
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #e6f3ff;
+        }
+
+        .visualization-bar {
+            width: 4px;
+            height: 20px;
+            background: #4361ee;
+            margin: 0 2px;
+            border-radius: 2px;
+            animation: wave 1.5s ease-in-out infinite;
+        }
+
+        .visualization-bar:nth-child(2) { animation-delay: 0.1s; }
+        .visualization-bar:nth-child(3) { animation-delay: 0.2s; }
+        .visualization-bar:nth-child(4) { animation-delay: 0.3s; }
+        .visualization-bar:nth-child(5) { animation-delay: 0.4s; }
+        .visualization-bar:nth-child(6) { animation-delay: 0.5s; }
+        .visualization-bar:nth-child(7) { animation-delay: 0.6s; }
+        .visualization-bar:nth-child(8) { animation-delay: 0.7s; }
+
+        @keyframes wave {
+            0%, 100% { transform: scaleY(0.5); }
+            50% { transform: scaleY(2); }
+        }
+
+        /* 动画效果 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.5s ease;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .text-input {
+                min-height: 200px;
+                padding: 15px;
+            }
+
+            .setting-group {
+                grid-template-columns: 1fr;
+            }
+
+            .voice-settings {
+                padding: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .audio-container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo-container">
+                <img src="../static/images/logo.jpg" alt="系统Logo" class="logo">
+                <h1 class="welcome-text">语音合成系统</h1>
+            </div>
+
+            <div class="nav-menu">
+                <div class="dropdown">
+                    <button class="btn" onclick="navigate('home')">
+                        <i class="fas fa-home"></i>&nbsp;首页
+                    </button>
+                </div>
+
+                <div class="dropdown" id="faceRecognitionDropdown">
+                    <button class="btn dropdown-btn" onclick="toggleDropdown('faceRecognitionDropdown')">
+                        <i class="fas fa-user-circle"></i>&nbsp;人脸识别
+                    </button>
+                    <div class="dropdown-content">
+                        <button class="btn" onclick="navigate('feature')">
+                            <i class="fas fa-project-diagram"></i>&nbsp;人脸特征分析
+                        </button>
+                        <button class="btn" onclick="navigate('compare')">
+                            <i class="fas fa-compress-alt"></i>&nbsp;人脸对比
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dropdown" id="aiChatDropdown">
+                    <button class="btn dropdown-btn" onclick="toggleDropdown('aiChatDropdown')">
+                        <i class="fas fa-robot"></i>&nbsp;AI对话
+                    </button>
+                    <div class="dropdown-content">
+                        <button class="btn" onclick="navigate('chat')">
+                            <i class="fas fa-comments"></i>&nbsp;校园问答
+                        </button>
+                        <button class="btn" onclick="navigate('voice_chat')">
+                            <i class="fas fa-microphone-alt"></i>&nbsp;语音聊天
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dropdown" id="speechDropdown">
+                    <button class="btn dropdown-btn" onclick="toggleDropdown('speechDropdown')">
+                        <i class="fas fa-microphone-alt"></i>&nbsp;语音技术
+                    </button>
+                    <div class="dropdown-content">
+                        <button class="btn" onclick="navigate('speech_recognition')">
+                            <i class="fas fa-microphone"></i>&nbsp;语音识别
+                        </button>
+                        <button class="btn" onclick="navigate('speech_synthesis')">
+                            <i class="fas fa-volume-up"></i>&nbsp;语音合成
+                        </button>
+                        <button class="btn" onclick="navigate('speech_information')">
+                            <i class="fas fa-info-circle"></i>&nbsp;语音信息
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-container">
+        <div class="page-header">
+            <h1><i class="fas fa-volume-up"></i> 语音合成能力演示</h1>
+            <p>将文字转化为自然流畅的人声，广泛应用于新闻阅读、出行导航、智能硬件和通知播报等场景</p>
+        </div>
+
+        <div class="grid-2">
+            <!-- 左侧输入区域 -->
+            <div class="card">
+                <h2 class="card-title" style="color: #4361ee;"><i class="fas fa-edit"></i> 输入文本</h2>
+                
+                <!-- 语音参数设置 -->
+                <div class="voice-settings">
+                    <h4><i class="fas fa-cog"></i> 语音设置</h4>
+                    <div class="setting-group">
+                        <div class="setting-item">
+                            <label for="voiceType"><i class="fas fa-voice"></i> 语音类型</label>
+                            <select id="voiceType">
+                                <option value="standard">标准女声</option>
+                                <option value="yifei">甜美女声</option>
+                                <option value="male">磁性男声</option>
+                                <option value="child">童声</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label for="speechRate"><i class="fas fa-tachometer-alt"></i> 语速</label>
+                            <input type="range" id="speechRate" min="0.5" max="2" step="0.1" value="1">
+                            <span id="rateValue" style="color: #4361ee; font-size: 12px;">正常</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="pitch"><i class="fas fa-music"></i> 音调</label>
+                            <input type="range" id="pitch" min="0.5" max="1.5" step="0.1" value="1">
+                            <span id="pitchValue" style="color: #4361ee; font-size: 12px;">正常</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <form id="synthesisForm" method="POST" action="/speech_synthesis">
+                    <textarea name="TEXT" class="text-input" placeholder="请输入需要合成的文本内容..." required>{% if text %}{{ text }}{% else %}欢迎使用语音合成系统，请输入您想要转换为语音的文本内容。系统支持中英文混合文本，最大长度不超过500个字符。{% endif %}</textarea>
+                    
+                    <!-- 文本统计信息 -->
+                    <div class="text-stats">
+                        <p>字符数: <span id="charCount">0</span></p>
+                        <p>预估时长: <span id="durationEstimate">0秒</span></p>
+                        <p>推荐长度: <span id="recommendation">优秀</span></p>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary w-100">
+                        <i class="fas fa-play"></i> 开始合成
+                    </button>
+                </form>
+            </div>
+
+            <!-- 右侧结果区域 -->
+            <div class="card">
+                <h2 class="card-title" style="color: #4361ee;"><i class="fas fa-music"></i> 合成结果</h2>
+                
+                <div class="result-content text-center">
+                    {% if result %}
+                        <div class="success-indicator fade-in-up">
+                            <i class="fas fa-check-circle"></i> 语音合成完成！
+                        </div>
+                        <h3 class="status-message">点击播放合成语音</h3>
+                        
+                        <!-- 音频可视化效果 -->
+                        <div class="audio-visualization fade-in-up">
+                            <div class="visualization-bar"></div>
+                            <div class="visualization-bar"></div>
+                            <div class="visualization-bar"></div>
+                            <div class="visualization-bar"></div>
+                            <div class="visualization-bar"></div>
+                            <div class="visualization-bar"></div>
+                            <div class="visualization-bar"></div>
+                            <div class="visualization-bar"></div>
+                        </div>
+                        
+                        <div class="audio-container fade-in-up">
+                            <audio controls class="audio-player" id="resultAudio">
+                                <source src="{{ url_for('static', filename=result) }}">
+                                您的浏览器不支持音频播放
+                            </audio>
+                        </div>
+                        
+                        <button class="download-btn fade-in-up" onclick="downloadAudio('{{ url_for('static', filename=result) }}')">
+                            <i class="fas fa-download"></i> 下载音频文件
+                        </button>
+                    {% else %}
+                        <!-- 等待合成状态 -->
+                        <div class="audio-visualization">
+                            <div class="visualization-bar"></div>
+                            <div class="visualization-bar"></div>
+                            <div class="visualization-bar"></div>
+                            <div class="visualization-bar"></div>
+                            <div class="visualization-bar"></div>
+                            <div class="visualization-bar"></div>
+                            <div class="visualization-bar"></div>
+                            <div class="visualization-bar"></div>
+                        </div>
+                        
+                        <div class="audio-container" style="opacity: 0.5;">
+                            <audio controls class="audio-player" disabled>
+                                您的浏览器不支持音频播放
+                            </audio>
+                        </div>
+                        
+                        <p class="status-message">等待合成结果</p>
+                        <p style="color: #666; font-size: 14px; margin-top: 15px;">
+                            <i class="fas fa-info-circle"></i> 输入文本后点击"开始合成"生成语音
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h3><i class="fas fa-lightbulb"></i> 使用说明</h3>
+            <div class="instruction-item">
+                <i class="fas fa-check-circle"></i>
+                <span>请输入需要合成的文本内容，文本不能为空</span>
+            </div>
+            <div class="instruction-item">
+                <i class="fas fa-check-circle"></i>
+                <span>支持中英文文本合成，合成后的语音可在线播放</span>
+            </div>
+            <div class="instruction-item">
+                <i class="fas fa-check-circle"></i>
+                <span>合成过程可能需要几秒钟时间，请耐心等待</span>
+            </div>
+            <div class="instruction-item">
+                <i class="fas fa-check-circle"></i>
+                <span>建议文本长度在500字以内以获得最佳效果</span>
+            </div>
+            <div class="instruction-item">
+                <i class="fas fa-check-circle"></i>
+                <span>可通过语音设置调整音色、语速和音调参数</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading" class="loading">
+        <i class="fas fa-spinner fa-spin"></i> 正在合成，请稍候...
+    </div>
+
+    <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+    <script>
+        // 表单提交处理
+        document.getElementById('synthesisForm').addEventListener('submit', function(e) {
+            const textarea = this.querySelector('textarea');
+            const loading = document.getElementById('loading');
+            
+            if (!textarea.value.trim()) {
+                e.preventDefault();
+                alert('请输入需要合成的文本内容');
+                textarea.focus();
+                return;
+            }
+
+            // 验证文本长度
+            if (textarea.value.length > 1000) {
+                e.preventDefault();
+                alert('文本长度不能超过1000个字符');
+                textarea.focus();
+                return;
+            }
+
+            loading.style.display = 'block';
+            
+            // 显示处理中的状态
+            const resultContent = document.querySelector('.result-content');
+            resultContent.innerHTML = `
+                <div class="audio-visualization">
+                    <div class="visualization-bar"></div>
+                    <div class="visualization-bar"></div>
+                    <div class="visualization-bar"></div>
+                    <div class="visualization-bar"></div>
+                    <div class="visualization-bar"></div>
+                    <div class="visualization-bar"></div>
+                    <div class="visualization-bar"></div>
+                    <div class="visualization-bar"></div>
+                </div>
+                <div class="audio-container" style="opacity: 0.5;">
+                    <audio controls class="audio-player" disabled>
+                        您的浏览器不支持音频播放
+                    </audio>
+                </div>
+                <p class="status-message">正在合成语音，请稍候...</p>
+            `;
+        });
+
+        // 自动调整文本区域高度
+        const textarea = document.querySelector('.text-input');
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+            updateTextStats();
+        });
+
+        // 文本统计更新
+        function updateTextStats() {
+            const text = textarea.value;
+            const charCount = text.length;
+            const charCountElement = document.getElementById('charCount');
+            const durationElement = document.getElementById('durationEstimate');
+            const recommendationElement = document.getElementById('recommendation');
+            
+            charCountElement.textContent = charCount;
+            
+            // 预估时长（按正常语速约4字/秒）
+            const duration = Math.ceil(charCount / 4);
+            durationElement.textContent = duration + '秒';
+            
+            // 推荐提示
+            if (charCount === 0) {
+                recommendationElement.textContent = '请输入文本';
+                recommendationElement.style.color = '#666';
+            } else if (charCount <= 300) {
+                recommendationElement.textContent = '优秀';
+                recommendationElement.style.color = '#28a745';
+            } else if (charCount <= 500) {
+                recommendationElement.textContent = '良好';
+                recommendationElement.style.color = '#ffc107';
+            } else {
+                recommendationElement.textContent = '过长';
+                recommendationElement.style.color = '#dc3545';
+            }
+        }
+
+        // 语速滑块控制
+        const speechRate = document.getElementById('speechRate');
+        const rateValue = document.getElementById('rateValue');
+        
+        speechRate.addEventListener('input', function() {
+            const value = parseFloat(this.value);
+            if (value < 1) {
+                rateValue.textContent = '慢速';
+            } else if (value > 1) {
+                rateValue.textContent = '快速';
+            } else {
+                rateValue.textContent = '正常';
+            }
+        });
+
+        // 音调滑块控制
+        const pitch = document.getElementById('pitch');
+        const pitchValue = document.getElementById('pitchValue');
+        
+        pitch.addEventListener('input', function() {
+            const value = parseFloat(this.value);
+            if (value < 1) {
+                pitchValue.textContent = '低沉';
+            } else if (value > 1) {
+                pitchValue.textContent = '高亢';
+            } else {
+                pitchValue.textContent = '正常';
+            }
+        });
+
+        // 下载音频功能
+        function downloadAudio(audioUrl) {
+            const link = document.createElement('a');
+            link.href = audioUrl;
+            link.download = 'synthesized_audio.mp3';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // 音频播放时的可视化效果
+        document.addEventListener('DOMContentLoaded', function() {
+            const audioElement = document.getElementById('resultAudio');
+            if (audioElement) {
+                audioElement.addEventListener('play', function() {
+                    const bars = document.querySelectorAll('.visualization-bar');
+                    bars.forEach(bar => bar.style.animationPlayState = 'running');
+                });
+                
+                audioElement.addEventListener('pause', function() {
+                    const bars = document.querySelectorAll('.visualization-bar');
+                    bars.forEach(bar => bar.style.animationPlayState = 'paused');
+                });
+            }
+            
+            updateTextStats();
+            
+            // 如果有现有文本，调整高度
+            if (textarea.value) {
+                textarea.style.height = 'auto';
+                textarea.style.height = (textarea.scrollHeight) + 'px';
+            }
+        });
+    </script>
+</body>
+</html>

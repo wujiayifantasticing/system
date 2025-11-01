@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>校园问答 - AI聊天</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/utilities.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 聊天页面蓝色主题 */
+        .chat-container {
+            background: linear-gradient(135deg, #f8f9ff, #e6f3ff);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            height: 500px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            box-shadow: var(--card-shadow);
+            border: 2px solid #e6f3ff;
+        }
+
+        .message {
+            margin: 15px 0;
+            padding: 15px 20px;
+            border-radius: var(--border-radius-lg);
+            line-height: 1.5;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(67, 97, 238, 0.1);
+        }
+
+        .user-message {
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            color: white;
+            margin-left: auto;
+            text-align: left;
+            border-bottom-right-radius: 5px;
+        }
+
+        .user-message::after {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: 15px;
+            width: 0;
+            height: 0;
+            border-left: 8px solid #3a0ca3;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+        }
+
+        .bot-message {
+            background: white;
+            color: var(--dark);
+            margin-right: auto;
+            border: 2px solid #e6f3ff;
+            border-bottom-left-radius: 5px;
+        }
+
+        .bot-message::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 15px;
+            width: 0;
+            height: 0;
+            border-right: 8px solid #e6f3ff;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 15px;
+            background: white;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--card-shadow);
+            border: 2px solid #e6f3ff;
+            transition: all 0.3s ease;
+        }
+
+        .input-container:focus-within {
+            border-color: #4361ee;
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.2);
+        }
+
+        #user-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e6f3ff;
+            border-radius: var(--border-radius-sm);
+            font-size: 16px;
+            transition: var(--transition);
+            background: #f8f9ff;
+        }
+
+        #user-input:focus {
+            outline: none;
+            border-color: #4361ee;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+
+        #send-btn {
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            border: none;
+            padding: 15px 25px;
+            border-radius: var(--border-radius-sm);
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+            min-width: 120px;
+        }
+
+        #send-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #4895ef, #4361ee);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+        }
+
+        #send-btn:disabled {
+            background: #a0a0a0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* 加载动画蓝色主题 */
+        .loading {
+            color: #4361ee;
+            font-weight: 600;
+        }
+
+        .loading:after {
+            content: ' .';
+            animation: dots 1.5s steps(5, end) infinite;
+            color: #4361ee;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: ' .' }
+            40% { content: ' ..' }
+            60% { content: ' ...' }
+            80%, 100% { content: ' ....' }
+        }
+
+        /* 聊天消息中的链接样式 */
+        .bot-message a {
+            color: #4361ee;
+            text-decoration: none;
+            font-weight: 600;
+            border-bottom: 1px solid #4361ee;
+        }
+
+        .bot-message a:hover {
+            color: #3a0ca3;
+            border-bottom: 2px solid #3a0ca3;
+        }
+
+        /* 时间戳样式 */
+        .message-time {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-top: 5px;
+            text-align: right;
+        }
+
+        .user-message .message-time {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .bot-message .message-time {
+            color: #666;
+        }
+
+        /* 滚动条样式 */
+        .chat-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb {
+            background: #4361ee;
+            border-radius: 3px;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb:hover {
+            background: #3a0ca3;
+        }
+
+        /* 欢迎消息样式 */
+        .welcome-message {
+            text-align: center;
+            padding: 30px;
+            color: #4361ee;
+        }
+
+        .welcome-message i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: #4361ee;
+        }
+
+        .welcome-message h3 {
+            margin-bottom: 10px;
+            color: #4361ee;
+        }
+
+        .welcome-message p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        /* 消息动画 */
+        @keyframes messageSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message {
+            animation: messageSlideIn 0.3s ease;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .chat-container {
+                height: 400px;
+                padding: 15px;
+            }
+
+            .message {
+                max-width: 90%;
+                padding: 12px 15px;
+            }
+
+            .input-container {
+                padding: 15px;
+            }
+
+            #user-input {
+                padding: 12px 15px;
+            }
+
+            #send-btn {
+                padding: 12px 20px;
+                min-width: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo-container">
+                <img src="../static/images/logo.jpg" alt="系统Logo" class="logo">
+                <h1 class="welcome-text">校园问答系统</h1>
+            </div>
+
+            <div class="nav-menu">
+                <!-- 统一的导航菜单 -->
+                <div class="dropdown">
+                    <button class="btn" onclick="navigate('home')">
+                        <i class="fas fa-home"></i>&nbsp;首页
+                    </button>
+                </div>
+
+                <div class="dropdown" id="faceRecognitionDropdown">
+                    <button class="btn dropdown-btn" onclick="toggleDropdown('faceRecognitionDropdown')">
+                        <i class="fas fa-user-circle"></i>&nbsp;人脸识别
+                    </button>
+                    <div class="dropdown-content">
+                        <button class="btn" onclick="navigate('feature')">
+                            <i class="fas fa-project-diagram"></i>&nbsp;人脸特征分析
+                        </button>
+                        <button class="btn" onclick="navigate('compare')">
+                            <i class="fas fa-compress-alt"></i>&nbsp;人脸对比
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dropdown" id="aiChatDropdown">
+                    <button class="btn dropdown-btn" onclick="toggleDropdown('aiChatDropdown')">
+                        <i class="fas fa-robot"></i>&nbsp;AI对话
+                    </button>
+                    <div class="dropdown-content">
+                        <button class="btn" onclick="navigate('chat')">
+                            <i class="fas fa-comments"></i>&nbsp;校园问答
+                        </button>
+                        <button class="btn" onclick="navigate('voice_chat')">
+                            <i class="fas fa-microphone-alt"></i>&nbsp;语音聊天
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dropdown" id="speechDropdown">
+                    <button class="btn dropdown-btn" onclick="toggleDropdown('speechDropdown')">
+                        <i class="fas fa-microphone-alt"></i>&nbsp;语音技术
+                    </button>
+                    <div class="dropdown-content">
+                        <button class="btn" onclick="navigate('speech_recognition')">
+                            <i class="fas fa-microphone"></i>&nbsp;语音识别
+                        </button>
+                        <button class="btn" onclick="navigate('speech_synthesis')">
+                            <i class="fas fa-volume-up"></i>&nbsp;语音合成
+                        </button>
+                        <button class="btn" onclick="navigate('speech_information')">
+                            <i class="fas fa-info-circle"></i>&nbsp;语音信息
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-container">
+        <div class="page-header">
+            <!-- 在 .page-header 下方添加模型选择器 -->
+<div class="model-selector">
+    <div class="selector-container">
+        <label for="model-select"><i class="fas fa-brain"></i> 选择AI模型：</label>
+        <select id="model-select" class="model-select">
+            <option value="lite">星火Lite模型（快速响应）</option>
+            <option value="x1">星火X1模型（深度思考）</option>
+        </select>
+        <span id="model-status" class="model-status">
+            <i class="fas fa-check-circle"></i> 当前使用：星火Lite模型
+        </span>
+    </div>
+</div>
+
+<style>
+    /* 模型选择器样式 */
+    .model-selector {
+        background: white;
+        padding: 15px 25px;
+        border-radius: var(--border-radius);
+        margin-bottom: 20px;
+        box-shadow: var(--card-shadow);
+        border: 2px solid #e6f3ff;
+    }
+
+    .selector-container {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .model-selector label {
+        font-weight: 600;
+        color: #4361ee;
+        margin: 0;
+    }
+
+    .model-select {
+        padding: 8px 15px;
+        border: 2px solid #e6f3ff;
+        border-radius: var(--border-radius-sm);
+        background: #f8f9ff;
+        color: #333;
+        font-size: 14px;
+        transition: var(--transition);
+    }
+
+    .model-select:focus {
+        outline: none;
+        border-color: #4361ee;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+    }
+
+    .model-status {
+        font-size: 14px;
+        color: #28a745;
+        font-weight: 500;
+    }
+
+    .model-status i {
+        margin-right: 5px;
+    }
+
+    @media (max-width: 768px) {
+        .selector-container {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        .model-select {
+            width: 100%;
+        }
+    }
+</style>
+            <h1><i class="fas fa-comments"></i> 校园智能问答</h1>
+            <p>与AI助手进行自然对话，获取校园相关问题的解答</p>
+        </div>
+
+        <div id="chat-container" class="chat-container">
+            <!-- 欢迎消息 -->
+            <div class="welcome-message">
+                <i class="fas fa-robot"></i>
+                <h3>欢迎使用校园智能问答系统</h3>
+                <p>我是您的AI助手，可以为您解答校园相关的各种问题<br>包括课程安排、校园服务、学习资源等</p>
+            </div>
+        </div>
+
+        <div class="input-container">
+            <input type="text" id="user-input" class="form-input" placeholder="请输入您的问题..." autocomplete="off">
+            <button id="send-btn" class="btn-primary" onclick="sendMessage()">
+                <i class="fas fa-paper-plane"></i> 发送
+            </button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+    <script>
+        // 聊天功能
+        let messageCount = 0;
+        // 模型选择功能
+let currentModel = 'lite';
+
+// 模型选择事件
+document.getElementById('model-select').addEventListener('change', function(e) {
+    const newModel = e.target.value;
+    switchModel(newModel);
+});
+
+function switchModel(modelType) {
+    const modelSelect = document.getElementById('model-select');
+    const modelStatus = document.getElementById('model-status');
+    
+    // 显示切换中状态
+    modelStatus.innerHTML = `<i class="fas fa-sync-alt fa-spin"></i> 切换模型中...`;
+    modelSelect.disabled = true;
+    
+    fetch('/api/switch_model', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model_type: modelType })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            currentModel = modelType;
+            modelStatus.innerHTML = `<i class="fas fa-check-circle"></i> 当前使用：${data.model_name}`;
+            
+            // 添加切换成功提示
+            addMessage(`已切换到${data.model_name}，现在开始使用新的AI模型为您服务。`, 'bot');
+        } else {
+            modelStatus.innerHTML = `<i class="fas fa-exclamation-triangle"></i> 切换失败`;
+            alert('模型切换失败：' + data.error);
+            // 恢复原来的选择
+            modelSelect.value = currentModel;
+        }
+    })
+    .catch(error => {
+        modelStatus.innerHTML = `<i class="fas fa-exclamation-triangle"></i> 切换失败`;
+        alert('网络错误，模型切换失败');
+        modelSelect.value = currentModel;
+    })
+    .finally(() => {
+        modelSelect.disabled = false;
+    });
+}
+
+// 修改 sendMessage 函数，传递模型类型
+function sendMessage() {
+    const input = document.getElementById('user-input');
+    const message = input.value.trim();
+    if (!message) return;
+
+    addMessage(message, 'user');
+    input.value = '';
+    input.focus();
+
+    const loadingId = addLoadingMessage();
+
+    fetch('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            message: message,
+            model_type: currentModel  // 传递当前选择的模型
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        removeLoadingMessage(loadingId);
+        addMessage(data.response, 'bot');
+    })
+    .catch(error => {
+        removeLoadingMessage(loadingId);
+        addMessage('抱歉，网络连接出现问题，请稍后重试。', 'bot');
+    });
+}
+        
+
+        function addMessage(message, sender) {
+            const container = document.getElementById('chat-container');
+            
+            // 如果是第一条用户消息，移除欢迎消息
+            if (messageCount === 0 && sender === 'user') {
+                const welcomeMessage = container.querySelector('.welcome-message');
+                if (welcomeMessage) {
+                    welcomeMessage.remove();
+                }
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender === 'user' ? 'user-message' : 'bot-message'}`;
+            
+            // 格式化消息内容
+            let formattedMessage = message
+                .replace(/(\d+[\.\、])\s*/g, '<br>$1 ')
+                .replace(/\n/g, '<br>')
+                .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
+            
+            messageDiv.innerHTML = formattedMessage;
+            
+            // 添加时间戳
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'message-time';
+            timeDiv.textContent = getCurrentTime();
+            messageDiv.appendChild(timeDiv);
+            
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+            
+            messageCount++;
+        }
+
+        function addLoadingMessage() {
+            const container = document.getElementById('chat-container');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message bot-message';
+            const loadingSpan = document.createElement('span');
+            loadingSpan.className = 'loading';
+            loadingSpan.textContent = 'AI正在思考中';
+            loadingDiv.appendChild(loadingSpan);
+            container.appendChild(loadingDiv);
+            container.scrollTop = container.scrollHeight;
+            return loadingDiv;
+        }
+
+        function removeLoadingMessage(loadingDiv) {
+            loadingDiv.remove();
+        }
+
+        function getCurrentTime() {
+            const now = new Date();
+            return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        }
+
+        // 回车发送消息
+        document.getElementById('user-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // 自动聚焦输入框
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('user-input').focus();
+        });
+
+        // 输入框高度自适应
+        document.getElementById('user-input').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+    </script>
+</body>
+</html>

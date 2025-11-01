@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>语音识别 - AI识别系统</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/utilities.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 语音识别页面蓝色主题 */
+        .hidden {
+            display: none;
+        }
+
+        /* 上传区域蓝色主题 */
+        .upload-area {
+            border: 2px dashed #4361ee;
+            border-radius: var(--border-radius-sm);
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            background: #e6f3ff;
+            border-color: #3a0ca3;
+            transform: translateY(-2px);
+        }
+
+        .upload-area i {
+            font-size: 48px;
+            color: #4361ee;
+            margin-bottom: 15px;
+        }
+
+        .upload-area p {
+            color: #4361ee;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        /* 文件输入样式 */
+        .file-input {
+            margin: 15px 0;
+        }
+
+        /* 识别按钮蓝色主题 */
+        .btn-primary {
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            border: none;
+            padding: 15px;
+            border-radius: var(--border-radius-sm);
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #4895ef, #4361ee);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+        }
+
+        .btn-primary:disabled {
+            background: #a0a0a0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* 信息按钮蓝色主题 */
+        .btn {
+            background: rgba(67, 97, 238, 0.1);
+            color: #4361ee;
+            border: 2px solid #4361ee;
+            padding: 12px 20px;
+            border-radius: var(--border-radius-sm);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background: #4361ee;
+            color: white;
+        }
+
+        /* 信息内容蓝色主题 */
+        .info-content {
+            background: linear-gradient(135deg, #f8f9ff, #e6f3ff);
+            border-radius: var(--border-radius-sm);
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 4px solid #4361ee;
+            animation: slideDown 0.3s ease;
+        }
+
+        .info-content p {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        .info-content p strong {
+            color: #4361ee;
+        }
+
+        .info-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* 结果区域蓝色主题 */
+        .result-content {
+            background: linear-gradient(135deg, #f8f9ff, #e6f3ff);
+            border-radius: var(--border-radius-sm);
+            padding: 25px;
+            min-height: 200px;
+            border: 2px solid #e6f3ff;
+            transition: all 0.3s ease;
+        }
+
+        .result-content:hover {
+            border-color: #4361ee;
+        }
+
+        .result-text {
+            color: #333;
+            line-height: 1.6;
+            font-size: 16px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        /* 加载动画 */
+        .loading {
+            background: rgba(67, 97, 238, 0.9);
+            color: white;
+        }
+
+        /* 动画效果 */
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* 状态指示器 */
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 15px;
+            border-radius: 20px;
+            background: #e6f3ff;
+            color: #4361ee;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+
+        .status-indicator i {
+            margin-right: 8px;
+        }
+
+        /* 文件信息显示 */
+        .file-info {
+            background: #e6f3ff;
+            border-radius: var(--border-radius-sm);
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #4361ee;
+        }
+
+        .file-info p {
+            margin: 5px 0;
+            color: #4361ee;
+            font-weight: 600;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .upload-area {
+                padding: 30px 15px;
+            }
+
+            .upload-area i {
+                font-size: 36px;
+            }
+
+            .result-content {
+                padding: 20px;
+                min-height: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo-container">
+                <img src="../static/images/logo.jpg" alt="系统Logo" class="logo">
+                <h1 class="welcome-text">语音识别系统</h1>
+            </div>
+
+            <div class="nav-menu">
+                <!-- 统一的导航菜单 -->
+                <div class="dropdown">
+                    <button class="btn" onclick="navigate('home')">
+                        <i class="fas fa-home"></i>&nbsp;首页
+                    </button>
+                </div>
+
+                <div class="dropdown" id="faceRecognitionDropdown">
+                    <button class="btn dropdown-btn" onclick="toggleDropdown('faceRecognitionDropdown')">
+                        <i class="fas fa-user-circle"></i>&nbsp;人脸识别
+                    </button>
+                    <div class="dropdown-content">
+                        <button class="btn" onclick="navigate('feature')">
+                            <i class="fas fa-project-diagram"></i>&nbsp;人脸特征分析
+                        </button>
+                        <button class="btn" onclick="navigate('compare')">
+                            <i class="fas fa-compress-alt"></i>&nbsp;人脸对比
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dropdown" id="aiChatDropdown">
+                    <button class="btn dropdown-btn" onclick="toggleDropdown('aiChatDropdown')">
+                        <i class="fas fa-robot"></i>&nbsp;AI对话
+                    </button>
+                    <div class="dropdown-content">
+                        <button class="btn" onclick="navigate('chat')">
+                            <i class="fas fa-comments"></i>&nbsp;校园问答
+                        </button>
+                        <button class="btn" onclick="navigate('voice_chat')">
+                            <i class="fas fa-microphone-alt"></i>&nbsp;语音聊天
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dropdown" id="speechDropdown">
+                    <button class="btn dropdown-btn" onclick="toggleDropdown('speechDropdown')">
+                        <i class="fas fa-microphone-alt"></i>&nbsp;语音技术
+                    </button>
+                    <div class="dropdown-content">
+                        <button class="btn" onclick="navigate('speech_recognition')">
+                            <i class="fas fa-microphone"></i>&nbsp;语音识别
+                        </button>
+                        <button class="btn" onclick="navigate('speech_synthesis')">
+                            <i class="fas fa-volume-up"></i>&nbsp;语音合成
+                        </button>
+                        <button class="btn" onclick="navigate('speech_information')">
+                            <i class="fas fa-info-circle"></i>&nbsp;语音信息
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-container">
+        <div class="page-header">
+            <h1><i class="fas fa-microphone"></i> 语音识别能力演示</h1>
+            <p>将即时语音转换为文字信息，支持实时返回识别结果，让机器能够"听懂"人类语言</p>
+        </div>
+
+        <div class="grid-2">
+            <!-- 左侧上传区域 -->
+            <div class="card">
+                <h2 class="card-title" style="color: #4361ee;"><i class="fas fa-upload"></i> 上传音频文件</h2>
+                
+                <div class="upload-area" onclick="document.getElementById('audioFile').click()">
+                    <i class="fas fa-file-audio"></i>
+                    <p>请选择MP3格式的音频文件</p>
+                    <div class="status-indicator">
+                        <i class="fas fa-info-circle"></i> 点击上传或拖拽文件
+                    </div>
+                </div>
+
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <input type="file" name="file" id="audioFile" class="file-input" accept=".mp3" required>
+                    <div id="fileInfo" class="file-info hidden">
+                        <p id="fileName">文件名: </p>
+                        <p id="fileSize">文件大小: </p>
+                        <p id="fileType">文件类型: </p>
+                    </div>
+                    <button type="button" class="btn-primary w-100" onclick="uploadAudio()" id="recognizeBtn">
+                        <i class="fas fa-play"></i> 开始识别
+                    </button>
+                </form>
+
+                <button class="btn w-100 mt-20" onclick="toggleInfo()">
+                    <i class="fas fa-info-circle"></i> 显示/隐藏语音识别说明
+                </button>
+
+                <div class="info-content hidden" id="infoContent">
+                    <p><strong>语音识别功能说明：</strong></p>
+                    <p>* 语音听写是将即时语音(≤60秒)转换为文字信息，支持实时返回识别结果</p>
+                    <p>* 实现边上传音频边获得识别文本的效果，让机器能够"听懂"人类语言</p>
+                    <p>* 相当于给机器安装上"耳朵"，使其具备"能听"的功能</p>
+                    <p>* 支持中文普通话识别，准确率高达95%以上</p>
+                </div>
+            </div>
+
+            <!-- 右侧结果区域 -->
+            <div class="card">
+                <h2 class="card-title" style="color: #4361ee;"><i class="fas fa-text-width"></i> 识别结果</h2>
+                
+                <div class="result-content">
+                    <div class="result-text" id="resultText">
+                        {% if result %}
+                            {{ result }}
+                        {% else %}
+                            <div style="text-align: center; color: #4361ee;">
+                                <i class="fas fa-microphone" style="font-size: 48px; margin-bottom: 15px;"></i>
+                                <p>识别结果将显示在这里...</p>
+                                <p style="font-size: 14px; color: #666;">上传MP3音频文件后点击"开始识别"</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-20" style="text-align: center;">
+                    <div class="status-indicator" id="resultStatus">
+                        <i class="fas fa-clock"></i> 等待识别任务...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h3><i class="fas fa-lightbulb"></i> 使用说明</h3>
+            <div class="instruction-item">
+                <i class="fas fa-check-circle"></i>
+                <span>音频文件仅支持MP3格式，时长不超过60秒</span>
+            </div>
+            <div class="instruction-item">
+                <i class="fas fa-check-circle"></i>
+                <span>请确保音频清晰，背景噪音较小以获得最佳识别效果</span>
+            </div>
+            <div class="instruction-item">
+                <i class="fas fa-check-circle"></i>
+                <span>支持中文普通话识别，方言识别效果可能有所降低</span>
+            </div>
+            <div class="instruction-item">
+                <i class="fas fa-check-circle"></i>
+                <span>识别过程通常需要几秒钟时间，请耐心等待</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading" class="loading">
+        <i class="fas fa-spinner fa-spin"></i> 正在识别，请稍候...
+    </div>
+
+    <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+    <script>
+        // 信息显示切换
+        function toggleInfo() {
+            const infoContent = document.getElementById('infoContent');
+            infoContent.classList.toggle('hidden');
+        }
+
+        // 文件选择处理
+        document.getElementById('audioFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const fileInfo = document.getElementById('fileInfo');
+            const recognizeBtn = document.getElementById('recognizeBtn');
+            const resultText = document.getElementById('resultText');
+            const resultStatus = document.getElementById('resultStatus');
+
+            if (file) {
+                // 显示文件信息
+                document.getElementById('fileName').textContent = '文件名: ' + file.name;
+                document.getElementById('fileSize').textContent = '文件大小: ' + formatFileSize(file.size);
+                document.getElementById('fileType').textContent = '文件类型: ' + file.type;
+                fileInfo.classList.remove('hidden');
+
+                // 启用识别按钮
+                recognizeBtn.disabled = false;
+
+                // 更新状态
+                resultStatus.innerHTML = '<i class="fas fa-check-circle"></i> 文件已选择，点击开始识别';
+                resultStatus.style.background = '#e6f3ff';
+                resultStatus.style.color = '#4361ee';
+
+                // 清空之前的结果
+                resultText.innerHTML = '<div style="text-align: center; color: #4361ee;"><i class="fas fa-file-audio" style="font-size: 48px; margin-bottom: 15px;"></i><p>文件已准备就绪</p><p style="font-size: 14px; color: #666;">点击"开始识别"按钮开始语音识别</p></div>';
+            } else {
+                fileInfo.classList.add('hidden');
+                recognizeBtn.disabled = true;
+                resultStatus.innerHTML = '<i class="fas fa-clock"></i> 等待识别任务...';
+            }
+        });
+
+        // 音频上传和识别
+        function uploadAudio() {
+            const fileInput = document.getElementById('audioFile');
+            const file = fileInput.files[0];
+            const recognizeBtn = document.getElementById('recognizeBtn');
+            const resultStatus = document.getElementById('resultStatus');
+            
+            if (!file) {
+                alert('请先选择音频文件');
+                return;
+            }
+
+            // 验证文件类型
+            if (!file.type.includes('audio/mp') && !file.name.toLowerCase().endsWith('.mp3')) {
+                alert('请上传MP3格式的音频文件');
+                return;
+            }
+
+            // 更新按钮状态
+            recognizeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 识别中...';
+            recognizeBtn.disabled = true;
+            resultStatus.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> 正在识别音频...';
+
+            showLoading();
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch('/speech_recognition', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                
+                // 恢复按钮状态
+                recognizeBtn.innerHTML = '<i class="fas fa-play"></i> 开始识别';
+                recognizeBtn.disabled = false;
+
+                if (data.success) {
+                    resultText.textContent = data.result;
+                    resultStatus.innerHTML = '<i class="fas fa-check-circle"></i> 识别完成';
+                    resultStatus.style.background = '#d4edda';
+                    resultStatus.style.color = '#155724';
+                    
+                    // 添加成功动画
+                    resultText.style.animation = 'fadeIn 0.5s ease';
+                } else {
+                    resultText.innerHTML = '<div style="text-align: center; color: #dc3545;"><i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 15px;"></i><p>识别失败</p><p style="font-size: 14px;">' + data.error + '</p></div>';
+                    resultStatus.innerHTML = '<i class="fas fa-times-circle"></i> 识别失败';
+                    resultStatus.style.background = '#f8d7da';
+                    resultStatus.style.color = '#721c24';
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                
+                // 恢复按钮状态
+                recognizeBtn.innerHTML = '<i class="fas fa-play"></i> 开始识别';
+                recognizeBtn.disabled = false;
+
+                resultText.innerHTML = '<div style="text-align: center; color: #dc3545;"><i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 15px;"></i><p>网络错误</p><p style="font-size: 14px;">' + error.message + '</p></div>';
+                resultStatus.innerHTML = '<i class="fas fa-times-circle"></i> 网络错误';
+                resultStatus.style.background = '#f8d7da';
+                resultStatus.style.color = '#721c24';
+            });
+        }
+
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 添加拖放功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.querySelector('.upload-area');
+            
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.style.background = '#e6f3ff';
+                this.style.borderColor = '#3a0ca3';
+            });
+
+            uploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                this.style.background = '#f8f9ff';
+                this.style.borderColor = '#4361ee';
+            });
+
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.style.background = '#f8f9ff';
+                this.style.borderColor = '#4361ee';
+
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const fileInput = document.getElementById('audioFile');
+                    fileInput.files = files;
+                    
+                    // 触发change事件
+                    const event = new Event('change');
+                    fileInput.dispatchEvent(event);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
