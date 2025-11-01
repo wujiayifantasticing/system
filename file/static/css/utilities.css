@@ -1,0 +1,54 @@
+/* utilities.css - 工具类 */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.mb-0 { margin-bottom: 0; }
+.mb-10 { margin-bottom: 10px; }
+.mb-20 { margin-bottom: 20px; }
+.mb-30 { margin-bottom: 30px; }
+
+.mt-0 { margin-top: 0; }
+.mt-10 { margin-top: 10px; }
+.mt-20 { margin-top: 20px; }
+.mt-30 { margin-top: 30px; }
+
+.p-0 { padding: 0; }
+.p-20 { padding: 20px; }
+.p-30 { padding: 30px; }
+
+.w-100 { width: 100%; }
+.h-100 { height: 100%; }
+
+.flex { display: flex; }
+.flex-column { flex-direction: column; }
+.flex-center { 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.flex-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.hidden { display: none; }
+.visible { display: block; }
+
+.text-primary { color: var(--primary); }
+.text-secondary { color: var(--secondary); }
+.text-success { color: var(--success); }
+.text-warning { color: var(--warning); }
+.text-muted { color: var(--gray); }
+
+.bg-primary { background-color: var(--primary); }
+.bg-light { background-color: var(--light); }
+.bg-white { background-color: white; }
+
+.shadow { box-shadow: var(--card-shadow); }
+.no-shadow { box-shadow: none; }
+
+.rounded { border-radius: var(--border-radius); }
+.rounded-sm { border-radius: var(--border-radius-sm); }
+.rounded-lg { border-radius: var(--border-radius-lg); }
