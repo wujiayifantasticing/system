@@ -1,0 +1,49 @@
+/* static/css/theme.css */
+:root {
+  /* 蓝色主题色系 */
+  --primary: #4361ee;
+  --primary-light: #4895ef;
+  --primary-dark: #3a0ca3;
+  --secondary: #4cc9f0;
+  --secondary-light: #5ce1e6;
+  --secondary-dark: #3f37c9;
+  
+  /* 中性色 */
+  --white: #ffffff;
+  --light: #f8f9fa;
+  --gray-light: #e9ecef;
+  --gray: #6c757d;
+  --gray-dark: #495057;
+  --dark: #212529;
+  
+  /* 功能色 */
+  --success: #4bb543;
+  --warning: #ffc107;
+  --danger: #dc3545;
+  --info: #17a2b8;
+  
+  /* 阴影 */
+  --card-shadow: 0 4px 12px rgba(67, 97, 238, 0.15);
+  --hover-shadow: 0 8px 25px rgba(67, 97, 238, 0.2);
+  
+  /* 圆角 */
+  --border-radius-sm: 8px;
+  --border-radius: 12px;
+  --border-radius-lg: 16px;
+  
+  /* 过渡效果 */
+  --transition: all 0.3s ease;
+}
+
+/* 蓝色主题渐变 */
+.gradient-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+}
+
+.gradient-secondary {
+  background: linear-gradient(135deg, var(--secondary), var(--primary-light));
+}
+
+.gradient-light {
+  background: linear-gradient(135deg, var(--light), var(--white));
+}

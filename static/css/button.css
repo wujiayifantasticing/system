@@ -1,0 +1,127 @@
+/* 背景样式 */
+.light-blue-bg {
+    background-color: #f0f8ff;
+}
+
+/* Logo容器样式 */
+.logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+}
+
+.logo {
+    max-height: 50px;
+    width: auto;
+}
+
+.welcome-text {
+    color: #333;
+    font-size: 24px;
+    margin: 0;
+    text-align: center;
+}
+
+/* 导航菜单样式 */
+.nav-menu {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* 按钮基础样式 */
+.btn {
+    padding: 12px 25px;
+    min-width: 150px;
+    text-align: center;
+}
+
+/* 下拉菜单容器样式 */
+.dropdown {
+    position: relative;
+}
+
+/* 下拉内容样式调整 */
+.dropdown-content {
+    min-width: 150px;
+    left: 0;
+    top: 100%;
+    position: absolute;
+    display: none;
+    background-color: #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 1000;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* 箭头动画 */
+.arrow {
+    margin-left: 8px;
+    transition: transform 0.3s ease;
+}
+
+.dropdown:hover .arrow {
+    transform: rotate(180deg);
+}
+
+/* 淡入动画 */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 导航菜单按钮的基本样式 */
+.btn {
+    background-color: #1e90ff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 10px;
+    width: 120px;
+    height: 40px;
+}
+
+/* 鼠标悬停效果 */
+.btn:hover {
+    background-color: #0066cc;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* 点击效果 */
+.btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 下拉菜单按钮特殊样式 */
+.dropdown-btn {
+    background-color: #1e90ff;
+    color: white;
+    position: relative;
+    width: 120px;
+    height: 40px;
+}
+
+/* 下拉菜单内容的按钮样式 */
+.dropdown-content .btn {
+    width: 120px;
+    height: 40px;
+    background-color: #e6f3ff;
+    color: black;
+}
+
+/* 下拉菜单展开时的按钮样式 */
+.dropdown-content .btn:hover {
+    background-color: #b3d9ff;
+}

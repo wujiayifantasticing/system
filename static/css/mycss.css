@@ -1,0 +1,39 @@
+/* compare.html 相关样式 */
+.buttodns1 {
+    margin: 10px 0;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 100%;
+}
+
+.upload-drop-zone {
+    border: 2px dashed #ccc;
+    border-radius: 5px;
+    padding: 20px;
+    text-align: center;
+    color: #666;
+    transition: all 0.3s ease;
+}
+
+.upload-drop-zone:hover {
+    border-color: #007bff;
+    background-color: #f8f9fa;
+}
+
+.identifybutton {
+    transition: all 0.3s ease;
+}
+
+.list-group-item .badge {
+    font-size: 14px;
+    padding: 5px 10px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .col-md-4, .col-md-3 {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+}
